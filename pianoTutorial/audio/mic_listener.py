@@ -67,7 +67,7 @@ class MicListener:
         self.latest_spectrum = avg_spectrum
 
         scalar = np.mean(avg_spectrum) + 4 * np.std(avg_spectrum)
-        self.current_threshold = scalar * self.threshold_profile
+        self.current_threshold = scalar * self.threshold_profile + 4
 
         valid = (avg_spectrum >= self.current_threshold) & (avg_spectrum >= 2)
         valid_indices = np.where(valid)[0]

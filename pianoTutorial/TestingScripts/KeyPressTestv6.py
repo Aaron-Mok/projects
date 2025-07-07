@@ -35,9 +35,17 @@ def freq_to_note(freq):
     A4 = 440
     if freq <= 0:
         return None
-    n = round(12 * np.log2(freq / A4)) + 69
+    n = round(12 * np.log2(freq / A4)) + 69  # MIDI note number
     note_names = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
-    return note_names[n % 12] + str(n // 12 - 1)
+    note = note_names[n % 12]
+    octave = n // 12 - 1
+    return note + str(octave)
+
+    # A0 = A4 / (2 ** 4)
+    # semitone = round((np.log(freq / A4) / np.log(2)) * 12) + 9
+    # octave = round(np.log(freq / A0) / np.log(2))
+    # note_names = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab','A', 'Bb', 'B']
+    # return note_names[semitone % 12] + str(octave)
 
 # === High-pass filter ===
 def highpass_filter(signal, cutoff=90, fs=44100, order=3):
@@ -59,7 +67,7 @@ def audio_callback(indata, frames, time, status):
         total_collected = len(baseline_frames) * blocksize / samplerate
         print(f"⏳ Calibrating baseline noise... {total_collected:.1f}s")
         latest_spectrum[:] = spectrum  # Display raw spectrum during calibration
-        current_threshold[:] = np.zeros_like(freqs)  # No threshold yet
+        current_threshold[:] = np.zeros_like(freqs) + 4 # No threshold yet
         if total_collected >= baseline_duration_sec:
             baseline_spectrum = np.mean(baseline_frames, axis=0)
             baseline_done = True
@@ -77,9 +85,12 @@ def audio_callback(indata, frames, time, status):
 
     # Threshold
     dynamic_scalar = np.mean(avg_spectrum) + 4 * np.std(avg_spectrum)
-    current_threshold = dynamic_scalar * threshold_profile
+    current_threshold = dynamic_scalar * threshold_profile + 4
 
-    valid = (avg_spectrum >= current_threshold) & (avg_spectrum >= 2)
+    # print("Current Threshold:", current_threshold)
+
+    # valid = (avg_spectrum >= current_threshold) & (avg_spectrum >= 2)
+    valid = (avg_spectrum >= current_threshold)
     valid_indices = np.where(valid)[0]
 
     # if len(valid_indices) > 0:
@@ -102,6 +113,7 @@ def audio_callback(indata, frames, time, status):
         detected_notes[:] = []
 
 # === Plot setup ===
+plt.style.use('./style.mplstyle')
 fig, ax = plt.subplots()
 line, = ax.plot(freqs, latest_spectrum, label="Spectrum")
 threshold_line, = ax.plot(freqs, np.full_like(freqs, current_threshold), 'r--', label="Threshold")
@@ -111,7 +123,7 @@ ax.set_xlim(min_freq, max_freq)
 ax.set_ylim(0, 10)
 ax.set_xlabel("Frequency (Hz)")
 ax.set_ylabel("Magnitude")
-ax.set_title("Real-Time FFT with Noise Subtraction and Note Detection")
+ax.set_title("Real-Time FFT of audio from webcam mic")
 
 def update_plot(frame):
     line.set_ydata(latest_spectrum)

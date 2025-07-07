@@ -146,8 +146,9 @@ class KeyboardUI:
             results_hands = self.hands.process(frame_rgb)
 
             # YOLOv8 segmentation
+            self.model.names[0] = "piano"
             results = self.model(frame, conf=0.9)[0]
-            annotated = results.plot()
+            annotated = results.plot(labels = False)
             cv2.imshow("Original frame and YOLO mask", annotated)
 
             h_img, w_img, _ = frame.shape
